@@ -23,7 +23,7 @@ public class QuestionService {
     public QuestionResponse getQuestion(Long subjectId, int questionNumber) {
 
         List<Question> questions =
-                repo.findBySubjectSubjectIdOrderByIdAsc(subjectId);
+                repo.findQuestionsBySubjectId(subjectId);
 
         if (questionNumber < 1 || questionNumber > questions.size()) {
             throw new RuntimeException("Question not found");

@@ -1,5 +1,6 @@
 package com.example.Backend.Entity;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -42,5 +43,6 @@ public class Question {
     private Subject subject;
 
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL)
+    @JsonManagedReference
     private List<Option> options;
 }

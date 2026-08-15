@@ -1,12 +1,11 @@
 package com.example.Backend.Controller;
 
-
+import com.example.Backend.DTO.AnswerResponse;
+import com.example.Backend.DTO.QuestionResponse;
 import com.example.Backend.Entity.Question;
 import com.example.Backend.Service.QuestionService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -14,14 +13,30 @@ import java.util.List;
 @RequestMapping("/api/questions")
 public class QuestionController {
 
-
     @Autowired
     QuestionService service;
 
+    // Existing API
     @GetMapping("/get")
-    public List<Question> getall(){
-
+    public List<Question> getall() {
         return service.getall();
+    }
 
+    // Get ONE question
+    @GetMapping("/subject/{subject_id}/question/{questionNumber}")
+    public QuestionResponse getQuestion(
+            @PathVariable Long subject_id,
+            @PathVariable int questionNumber) {
+
+        return service.getQuestion(subject_id, questionNumber);
+    }
+
+    // Check answer
+    @PostMapping("/{questionId}/answer")
+    public AnswerResponse checkAnswer(
+            @PathVariable Long questionId,
+            @RequestParam String answer) {
+
+        return service.checkAnswer(questionId, answer);
     }
 }
