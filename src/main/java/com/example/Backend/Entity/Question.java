@@ -1,7 +1,5 @@
 package com.example.Backend.Entity;
 
-import com.example.Backend.Entity.Chapter;
-import com.example.Backend.Entity.Subject;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -41,7 +39,5 @@ public class Question {
     @JoinColumn(name = "subject_id", nullable = false)
     private Subject subject;
 
-    @ManyToOne
-    @JoinColumn(name = "chapter_id", nullable = false)
-    private Chapter chapter;
+
 }
