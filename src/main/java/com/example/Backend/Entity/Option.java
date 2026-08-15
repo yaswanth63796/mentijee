@@ -4,24 +4,24 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "practice_sets")
+@Table(name = "options")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class PracticeSet {
+public class Option {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false)
-    private String name;
+    private String optionLabel;
 
-    @Column(columnDefinition = "TEXT")
-    private String description;
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String optionText;
 
     @ManyToOne
-    @JoinColumn(name = "subject_id", nullable = false)
-    private Subject subject;
+    @JoinColumn(name = "question_id", nullable = false)
+    private Question question;
 }
