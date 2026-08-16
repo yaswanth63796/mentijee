@@ -21,6 +21,7 @@ const QuestionPractice = () => {
   // State requirements from prompt
   const [question, setQuestion] = useState(null);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
+  const [numericalAnswer, setNumericalAnswer] = useState('');
   const [answerSubmitted, setAnswerSubmitted] = useState(false);
   const [answerResult, setAnswerResult] = useState(null);
   const [currentQuestionNumber, setCurrentQuestionNumber] = useState(1);
@@ -32,12 +33,15 @@ const QuestionPractice = () => {
   const [error, setError] = useState(null);
   const [completed, setCompleted] = useState(false);
 
+  // Check if current question is numerical (questions 21 to 25)
+  const isNumerical = currentQuestionNumber >= 21 && currentQuestionNumber <= 25;
+
   // Subject Name lookup helper
   const getSubjectName = (id) => {
     switch (String(id)) {
-      case '1': return 'Physics';
-      case '2': return 'Chemistry';
-      case '3': return 'Mathematics';
+      case '2': return 'Physics';
+      case '3': return 'Chemistry';
+      case '4': return 'Mathematics';
       default: return `Subject ${id}`;
     }
   };
@@ -64,21 +68,29 @@ const QuestionPractice = () => {
     }
   }, [subjectId, currentQuestionNumber]);
 
-  // Option selection handler
+  // Option selection handler for MCQ
   const handleSelectOption = (optionLabel) => {
     if (answerSubmitted || checkingAnswer) return;
     setSelectedAnswer(optionLabel);
   };
 
+  // Numerical answer input change handler
+  const handleNumericalChange = (e) => {
+    if (answerSubmitted || checkingAnswer) return;
+    setNumericalAnswer(e.target.value);
+  };
+
   // Check Answer Handler
   const handleCheckAnswer = async () => {
-    if (!selectedAnswer || !question || answerSubmitted || checkingAnswer) return;
+    const answerToSubmit = isNumerical ? numericalAnswer.trim() : selectedAnswer;
+
+    if (!answerToSubmit || !question || answerSubmitted || checkingAnswer) return;
 
     setCheckingAnswer(true);
     setError(null);
 
     try {
-      const result = await checkAnswer(question.id, selectedAnswer);
+      const result = await checkAnswer(question.id, answerToSubmit);
       setAnswerResult(result);
       setAnswerSubmitted(true);
 
@@ -112,6 +124,7 @@ const QuestionPractice = () => {
 
     // Reset State for Next Question
     setSelectedAnswer(null);
+    setNumericalAnswer('');
     setAnswerSubmitted(false);
     setAnswerResult(null);
     setError(null);
@@ -224,41 +237,67 @@ const QuestionPractice = () => {
 
                 <h2 className="question-text">{question.questionText}</h2>
 
-                {/* OPTIONS LIST */}
-                <div className="options-list">
-                  {question.options && question.options.map((opt) => {
-                    const isSelected = selectedAnswer === opt.optionLabel;
-                    let resultClass = '';
-                    
-                    if (answerSubmitted && answerResult) {
-                      if (answerResult.correct && isSelected) {
-                        resultClass = 'correct-result';
-                      } else if (!answerResult.correct) {
-                        if (isSelected) {
-                          resultClass = 'wrong-result';
-                        } else if (answerResult.correctAnswer === opt.optionLabel) {
+                {/* QUESTION INPUT UI (MCQ OR NUMERICAL) */}
+                {isNumerical ? (
+                  /* NUMERICAL INPUT UI (Questions 21 to 25) */
+                  <div className="numerical-input-container">
+                    <label className="numerical-label" htmlFor="numericalAnswerInput">
+                      Enter numerical answer:
+                    </label>
+                    <input
+                      id="numericalAnswerInput"
+                      type="number"
+                      step="any"
+                      placeholder="Type your answer here..."
+                      value={numericalAnswer}
+                      onChange={handleNumericalChange}
+                      disabled={answerSubmitted || checkingAnswer}
+                      className={`numerical-input ${
+                        answerSubmitted && answerResult
+                          ? answerResult.correct
+                            ? 'correct-result'
+                            : 'wrong-result'
+                          : ''
+                      }`}
+                    />
+                  </div>
+                ) : (
+                  /* MCQ OPTIONS LIST UI (Questions 1 to 20) */
+                  <div className="options-list">
+                    {question.options && question.options.map((opt) => {
+                      const isSelected = selectedAnswer === opt.optionLabel;
+                      let resultClass = '';
+                      
+                      if (answerSubmitted && answerResult) {
+                        if (answerResult.correct && isSelected) {
                           resultClass = 'correct-result';
+                        } else if (!answerResult.correct) {
+                          if (isSelected) {
+                            resultClass = 'wrong-result';
+                          } else if (answerResult.correctAnswer === opt.optionLabel) {
+                            resultClass = 'correct-result';
+                          }
                         }
                       }
-                    }
 
-                    return (
-                      <div
-                        key={opt.id || opt.optionLabel}
-                        className={`option-card ${isSelected ? 'selected' : ''} ${resultClass} ${
-                          answerSubmitted || checkingAnswer ? 'disabled' : ''
-                        }`}
-                        onClick={() => handleSelectOption(opt.optionLabel)}
-                      >
-                        <div className="radio-indicator">
-                          {isSelected && <div className="radio-inner"></div>}
+                      return (
+                        <div
+                          key={opt.id || opt.optionLabel}
+                          className={`option-card ${isSelected ? 'selected' : ''} ${resultClass} ${
+                            answerSubmitted || checkingAnswer ? 'disabled' : ''
+                          }`}
+                          onClick={() => handleSelectOption(opt.optionLabel)}
+                        >
+                          <div className="radio-indicator">
+                            {isSelected && <div className="radio-inner"></div>}
+                          </div>
+                          <span className="option-label">{opt.optionLabel}.</span>
+                          <span className="option-text">{opt.optionText}</span>
                         </div>
-                        <span className="option-label">{opt.optionLabel}.</span>
-                        <span className="option-text">{opt.optionText}</span>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
 
                 {/* ANSWER CHECK RESULT DISPLAY */}
                 {answerSubmitted && answerResult && (
@@ -309,7 +348,9 @@ const QuestionPractice = () => {
                   {!answerSubmitted ? (
                     <button
                       className="btn-primary"
-                      disabled={!selectedAnswer || checkingAnswer}
+                      disabled={
+                        (isNumerical ? !numericalAnswer.trim() : !selectedAnswer) || checkingAnswer
+                      }
                       onClick={handleCheckAnswer}
                     >
                       {checkingAnswer ? (
@@ -317,6 +358,8 @@ const QuestionPractice = () => {
                           <div className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }}></div>
                           Checking answer...
                         </>
+                      ) : isNumerical ? (
+                        'Submit Answer'
                       ) : (
                         'Check Answer'
                       )}
