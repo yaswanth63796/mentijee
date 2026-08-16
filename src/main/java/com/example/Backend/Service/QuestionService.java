@@ -22,7 +22,7 @@ public class QuestionService {
     }
 
 
-    // Get ONE question
+    // Get one question
     public QuestionResponse getQuestion(
             Long subjectId,
             int questionNumber) {
@@ -60,7 +60,7 @@ public class QuestionService {
     }
 
 
-    // Check answer
+    // Check answer + find next question
     public AnswerResponse checkAnswer(
             Long questionId,
             String answer) {
@@ -78,18 +78,60 @@ public class QuestionService {
                         .equalsIgnoreCase(answer);
 
         Integer score =
-                correct ? question.getMarks() : 0;
+                correct
+                        ? question.getMarks()
+                        : 0;
+
+
+        // Get questions belonging to same subject
+        List<Question> questions =
+                repo.findQuestionsBySubjectId(
+                        question.getSubject()
+                                .getSubject_id()
+                );
+
+
+        // Find current question
+        int currentIndex = -1;
+
+        for (int i = 0; i < questions.size(); i++) {
+
+            if (questions.get(i)
+                    .getId()
+                    .equals(question.getId())) {
+
+                currentIndex = i;
+                break;
+            }
+        }
+
+
+        // Find next question
+        Long nextQuestion = null;
+
+        if (currentIndex != -1 &&
+                currentIndex + 1 < questions.size()) {
+
+            nextQuestion =
+                    questions
+                            .get(currentIndex + 1)
+                            .getId();
+        }
+
 
         return new AnswerResponse(
                 correct,
                 score,
+
                 correct
                         ? null
                         : question.getCorrectAnswer(),
+
                 correct
                         ? null
                         : question.getExplanation(),
-                null
+
+                nextQuestion
         );
     }
 }
