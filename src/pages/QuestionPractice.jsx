@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getQuestionBySubjectAndNumber, checkAnswer } from '../api/questionApi';
+import { usePractice } from '../context/PracticeContext';
 import { 
   CheckCircle2, 
   XCircle, 
@@ -10,13 +11,15 @@ import {
   BookOpen, 
   Sparkles,
   HelpCircle,
-  Award
+  Award,
+  Clock
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 const QuestionPractice = () => {
   const { subjectId } = useParams();
   const navigate = useNavigate();
+  const { session, setSubject, completeSubject, finishSession } = usePractice();
 
   // State requirements from prompt
   const [question, setQuestion] = useState(null);
@@ -32,6 +35,47 @@ const QuestionPractice = () => {
   const [checkingAnswer, setCheckingAnswer] = useState(false);
   const [error, setError] = useState(null);
   const [completed, setCompleted] = useState(false);
+  const [subjectCompletionStats, setSubjectCompletionStats] = useState(null);
+
+  // Helper: Get subject key for context ('physics', 'chemistry', 'mathematics')
+  const getSubjectKey = (id) => {
+    switch (String(id)) {
+      case '2': return 'physics';
+      case '3': return 'chemistry';
+      case '4': return 'mathematics';
+      default: return 'physics';
+    }
+  };
+
+  // Helper: Get next subject ID in flow
+  const getNextSubjectId = (id) => {
+    switch (String(id)) {
+      case '2': return '3'; // Physics -> Chemistry
+      case '3': return '4'; // Chemistry -> Mathematics
+      default: return null; // Mathematics -> Final Result
+    }
+  };
+
+  // Helper: Format seconds to MM:SS or HH:MM:SS
+  const formatTime = (seconds) => {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    if (hrs > 0) {
+      return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
+
+  const formatDetailedTime = (seconds) => {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    if (hrs > 0) {
+      return `${hrs}h ${String(mins).padStart(2, '0')}m ${String(secs).padStart(2, '0')}s`;
+    }
+    return `${mins}m ${String(secs).padStart(2, '0')}s`;
+  };
 
   // Check if current question is numerical (questions 21 to 25)
   const isNumerical = currentQuestionNumber >= 21 && currentQuestionNumber <= 25;
@@ -45,6 +89,15 @@ const QuestionPractice = () => {
       default: return `Subject ${id}`;
     }
   };
+
+  // Ensure subject timer is set in practice context when entering
+  useEffect(() => {
+    if (session.currentSubjectId !== String(subjectId)) {
+      setSubject(subjectId);
+    }
+    setCompleted(false);
+    setSubjectCompletionStats(null);
+  }, [subjectId]);
 
   // Fetch question API
   const fetchQuestion = async (number) => {
@@ -109,10 +162,27 @@ const QuestionPractice = () => {
     }
   };
 
-  // Next Question Handler
+  // Next Question / Next Subject Handler
   const handleNextQuestion = () => {
     if (answerResult && answerResult.nextQuestion === null) {
-      // Last question completed!
+      // Last question of this subject completed!
+      const currentKey = getSubjectKey(subjectId);
+      const timeTaken = session.subjectTime;
+      
+      // Save subject completion data in context
+      completeSubject(currentKey, totalScore, 100);
+
+      // Save local completion stats to display on intermediate subject completion screen
+      setSubjectCompletionStats({
+        subjectName: getSubjectName(subjectId),
+        score: totalScore,
+        totalMarks: 100,
+        time: timeTaken,
+        correctCount,
+        wrongCount,
+        nextId: getNextSubjectId(subjectId)
+      });
+      
       setCompleted(true);
       confetti({
         particleCount: 100,
@@ -122,13 +192,39 @@ const QuestionPractice = () => {
       return;
     }
 
-    // Reset State for Next Question
+    // Reset State for Next Question in same subject
     setSelectedAnswer(null);
     setNumericalAnswer('');
     setAnswerSubmitted(false);
     setAnswerResult(null);
     setError(null);
     setCurrentQuestionNumber((prev) => prev + 1);
+  };
+
+  // Transition from intermediate subject completion screen to Next Subject or Final Results
+  const handleProceedFromCompletion = () => {
+    const nextId = subjectCompletionStats?.nextId;
+    if (nextId) {
+      // Move to next subject (e.g. Physics -> Chemistry or Chemistry -> Mathematics)
+      setSubject(nextId);
+      navigate(`/practice/${nextId}`);
+      // Reset local QuestionPractice component state for new subject
+      setCurrentQuestionNumber(1);
+      setTotalScore(0);
+      setCorrectCount(0);
+      setWrongCount(0);
+      setSelectedAnswer(null);
+      setNumericalAnswer('');
+      setAnswerSubmitted(false);
+      setAnswerResult(null);
+      setError(null);
+      setCompleted(false);
+      setSubjectCompletionStats(null);
+    } else {
+      // All subjects finished -> Finish session and go to final results
+      finishSession();
+      navigate('/results');
+    }
   };
 
   return (
@@ -139,41 +235,63 @@ const QuestionPractice = () => {
           <div className="brand-logo">A</div>
           <div className="brand-name">aorta<span>.prep</span></div>
         </div>
+
+        {/* OVERALL PRACTICE TIMER IN HEADER */}
+        <div className="timer-badge header-timer">
+          <Clock size={16} />
+          <span>Overall: {formatTime(session.overallTime)}</span>
+        </div>
+
         <button className="btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }} onClick={() => navigate('/')}>
           Dashboard
         </button>
       </header>
 
       <main className="practice-page">
-        {/* COMPLETION SCREEN */}
-        {completed ? (
+        {/* INTERMEDIATE SUBJECT COMPLETION SCREEN */}
+        {completed && subjectCompletionStats ? (
           <div className="completion-card">
             <div className="completion-icon">
-              <Trophy size={42} />
+              <Trophy size={48} />
             </div>
-            <h1 className="completion-title">JEE Practice Completed!</h1>
+
+            <h1 className="completion-title">{subjectCompletionStats.subjectName} Completed!</h1>
             <p className="completion-subtitle">
-              Great effort! You finished all questions in {getSubjectName(subjectId)}.
+              Subject Practice Finished Successfully
             </p>
 
-            <div className="score-display-box">
-              <div className="score-label">Final Score</div>
-              <div className="total-score-value">{totalScore}</div>
-              
+            <div className="score-display-box" style={{ maxWidth: '440px' }}>
+              <div className="score-label">{subjectCompletionStats.subjectName} Score</div>
+              <div className="total-score-value">
+                {subjectCompletionStats.score} <span style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>/ {subjectCompletionStats.totalMarks}</span>
+              </div>
+
               <div className="stats-grid">
-                <div className="stat-box correct">
-                  <div className="stat-number">{correctCount}</div>
-                  <div className="stat-name">Correct</div>
+                <div className="stat-box">
+                  <div className="score-label">Time Taken</div>
+                  <div className="stat-number" style={{ color: 'var(--accent-cyan)' }}>
+                    {formatDetailedTime(subjectCompletionStats.time)}
+                  </div>
                 </div>
-                <div className="stat-box wrong">
-                  <div className="stat-number">{wrongCount}</div>
-                  <div className="stat-name">Wrong</div>
+                <div className="stat-box correct">
+                  <div className="score-label">Accuracy</div>
+                  <div className="stat-number" style={{ color: 'var(--success)' }}>
+                    {subjectCompletionStats.correctCount} / 25
+                  </div>
                 </div>
               </div>
             </div>
 
-            <button className="btn-primary" onClick={() => navigate('/')}>
-              Back to Dashboard
+            <button className="btn-primary" onClick={handleProceedFromCompletion} style={{ padding: '1rem 2.5rem' }}>
+              {subjectCompletionStats.nextId ? (
+                <>
+                  Proceed to {getSubjectName(subjectCompletionStats.nextId)} <ArrowRight size={20} />
+                </>
+              ) : (
+                <>
+                  View Final Overall Results <ArrowRight size={20} />
+                </>
+              )}
             </button>
           </div>
         ) : (
@@ -186,7 +304,13 @@ const QuestionPractice = () => {
                   <span style={{ color: 'var(--text-muted)' }}>/ 25</span>
                   <span className="subject-tag">{getSubjectName(subjectId)}</span>
                 </div>
+
+                {/* SUBJECT TIMER & STATS */}
                 <div className="score-stats">
+                  <div className="timer-badge subject-timer">
+                    <Clock size={16} />
+                    <span>{getSubjectName(subjectId)} Time: {formatTime(session.subjectTime)}</span>
+                  </div>
                   <div className="stat-item score">
                     <Award size={16} /> Score: {totalScore}
                   </div>
@@ -366,7 +490,10 @@ const QuestionPractice = () => {
                     </button>
                   ) : (
                     <button className="btn-primary" onClick={handleNextQuestion}>
-                      Next Question <ArrowRight size={18} />
+                      {answerResult && answerResult.nextQuestion === null
+                        ? `Finish ${getSubjectName(subjectId)}`
+                        : 'Next Question'}{' '}
+                      <ArrowRight size={18} />
                     </button>
                   )}
                 </div>

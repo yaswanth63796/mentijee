@@ -1,9 +1,16 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layers, ArrowRight, Sparkles, CheckCircle2 } from 'lucide-react';
+import { usePractice } from '../context/PracticeContext';
 
 const Home = () => {
   const navigate = useNavigate();
+  const { startSession } = usePractice();
+
+  const handleStartPractice = () => {
+    startSession();
+    navigate('/subjects');
+  };
 
   return (
     <div className="app-container">
@@ -60,7 +67,7 @@ const Home = () => {
               <button 
                 className="btn-primary" 
                 style={{ width: '100%', justifyContent: 'center', padding: '1rem' }}
-                onClick={() => navigate('/subjects')}
+                onClick={handleStartPractice}
               >
                 Start Practice <ArrowRight size={20} />
               </button>
