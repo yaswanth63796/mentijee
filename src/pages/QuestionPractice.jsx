@@ -1,18 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getQuestionBySubjectAndNumber, checkAnswer } from '../api/questionApi';
+import { saveTestResult } from '../api/testResultApi';
 import { usePractice } from '../context/PracticeContext';
-import { 
-  CheckCircle2, 
-  XCircle, 
-  ArrowRight, 
-  RotateCcw, 
-  Trophy, 
-  BookOpen, 
-  Sparkles,
-  HelpCircle,
+import {
+  CheckCircle2,
+  XCircle,
+  ArrowRight,
+  RotateCcw,
+  Trophy,
   Award,
-  Clock
+  Clock,
+  Home,
+  History,
+  Pencil,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -21,7 +22,8 @@ const QuestionPractice = () => {
   const navigate = useNavigate();
   const { session, setSubject, completeSubject, finishSession } = usePractice();
 
-  // State requirements from prompt
+  const saveRef = useRef(false); // prevent double save on completion screen
+
   const [question, setQuestion] = useState(null);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [numericalAnswer, setNumericalAnswer] = useState('');
@@ -36,8 +38,10 @@ const QuestionPractice = () => {
   const [error, setError] = useState(null);
   const [completed, setCompleted] = useState(false);
   const [subjectCompletionStats, setSubjectCompletionStats] = useState(null);
+  const [saveStatus, setSaveStatus] = useState('idle'); // 'idle'|'saving'|'saved'|'error'
 
-  // Helper: Get subject key for context ('physics', 'chemistry', 'mathematics')
+  // ── Helpers ──────────────────────────────────────────────────────────────
+
   const getSubjectKey = (id) => {
     switch (String(id)) {
       case '2': return 'physics';
@@ -47,40 +51,14 @@ const QuestionPractice = () => {
     }
   };
 
-  // Helper: Get next subject ID in flow
   const getNextSubjectId = (id) => {
     switch (String(id)) {
-      case '2': return '3'; // Physics -> Chemistry
-      case '3': return '4'; // Chemistry -> Mathematics
-      default: return null; // Mathematics -> Final Result
+      case '2': return '3';
+      case '3': return '4';
+      default: return null;
     }
   };
 
-  // Helper: Format seconds to MM:SS or HH:MM:SS
-  const formatTime = (seconds) => {
-    const hrs = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    if (hrs > 0) {
-      return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-    }
-    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-  };
-
-  const formatDetailedTime = (seconds) => {
-    const hrs = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    if (hrs > 0) {
-      return `${hrs}h ${String(mins).padStart(2, '0')}m ${String(secs).padStart(2, '0')}s`;
-    }
-    return `${mins}m ${String(secs).padStart(2, '0')}s`;
-  };
-
-  // Check if current question is numerical (questions 21 to 25)
-  const isNumerical = currentQuestionNumber >= 21 && currentQuestionNumber <= 25;
-
-  // Subject Name lookup helper
   const getSubjectName = (id) => {
     switch (String(id)) {
       case '2': return 'Physics';
@@ -90,16 +68,38 @@ const QuestionPractice = () => {
     }
   };
 
-  // Ensure subject timer is set in practice context when entering
+  const formatTime = (seconds) => {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    if (hrs > 0) return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
+
+  const formatDetailedTime = (seconds) => {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    if (hrs > 0) return `${hrs}h ${String(mins).padStart(2, '0')}m ${String(secs).padStart(2, '0')}s`;
+    return `${mins}m ${String(secs).padStart(2, '0')}s`;
+  };
+
+  // Questions 21-25 are numerical (fill in the blank)
+  const isNumerical = currentQuestionNumber >= 21 && currentQuestionNumber <= 25;
+
+  // ── Sync subject to context ───────────────────────────────────────────────
+
   useEffect(() => {
     if (session.currentSubjectId !== String(subjectId)) {
       setSubject(subjectId);
     }
     setCompleted(false);
     setSubjectCompletionStats(null);
+    saveRef.current = false;
   }, [subjectId]);
 
-  // Fetch question API
+  // ── Fetch question ────────────────────────────────────────────────────────
+
   const fetchQuestion = async (number) => {
     setLoading(true);
     setError(null);
@@ -114,40 +114,32 @@ const QuestionPractice = () => {
     }
   };
 
-  // Trigger question fetch when component mounts or subjectId/currentQuestionNumber changes
   useEffect(() => {
-    if (!completed) {
-      fetchQuestion(currentQuestionNumber);
-    }
+    if (!completed) fetchQuestion(currentQuestionNumber);
   }, [subjectId, currentQuestionNumber]);
 
-  // Option selection handler for MCQ
+  // ── Answer handlers ───────────────────────────────────────────────────────
+
   const handleSelectOption = (optionLabel) => {
     if (answerSubmitted || checkingAnswer) return;
     setSelectedAnswer(optionLabel);
   };
 
-  // Numerical answer input change handler
   const handleNumericalChange = (e) => {
     if (answerSubmitted || checkingAnswer) return;
     setNumericalAnswer(e.target.value);
   };
 
-  // Check Answer Handler
   const handleCheckAnswer = async () => {
     const answerToSubmit = isNumerical ? numericalAnswer.trim() : selectedAnswer;
-
     if (!answerToSubmit || !question || answerSubmitted || checkingAnswer) return;
 
     setCheckingAnswer(true);
     setError(null);
-
     try {
       const result = await checkAnswer(question.id, answerToSubmit);
       setAnswerResult(result);
       setAnswerSubmitted(true);
-
-      // Score logic: Only add score after backend response
       if (result.correct) {
         setTotalScore((prev) => prev + (result.score || 0));
         setCorrectCount((prev) => prev + 1);
@@ -162,37 +154,28 @@ const QuestionPractice = () => {
     }
   };
 
-  // Next Question / Next Subject Handler
+  // ── Subject completion ────────────────────────────────────────────────────
+
   const handleNextQuestion = () => {
     if (answerResult && answerResult.nextQuestion === null) {
-      // Last question of this subject completed!
       const currentKey = getSubjectKey(subjectId);
-      const timeTaken = session.subjectTime;
-      
-      // Save subject completion data in context
-      completeSubject(currentKey, totalScore, 100);
+      completeSubject(currentKey, totalScore, 100, correctCount, wrongCount);
 
-      // Save local completion stats to display on intermediate subject completion screen
       setSubjectCompletionStats({
         subjectName: getSubjectName(subjectId),
         score: totalScore,
         totalMarks: 100,
-        time: timeTaken,
+        time: session.subjectTime,
         correctCount,
         wrongCount,
-        nextId: getNextSubjectId(subjectId)
+        nextId: getNextSubjectId(subjectId),
       });
-      
+
       setCompleted(true);
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 }
-      });
+      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
       return;
     }
 
-    // Reset State for Next Question in same subject
     setSelectedAnswer(null);
     setNumericalAnswer('');
     setAnswerSubmitted(false);
@@ -201,14 +184,87 @@ const QuestionPractice = () => {
     setCurrentQuestionNumber((prev) => prev + 1);
   };
 
-  // Transition from intermediate subject completion screen to Next Subject or Final Results
-  const handleProceedFromCompletion = () => {
-    const nextId = subjectCompletionStats?.nextId;
+  // Build the subject results array from context + current completion stats
+  const buildSubjectResults = (stats) => {
+    const r = session.results || {};
+    const list = [];
+
+    // Previously completed subjects (stored in context)
+    ['physics', 'chemistry', 'mathematics'].forEach((key) => {
+      const subData = r[key];
+      if (subData && subData.completed) {
+        list.push({
+          subjectName: key.charAt(0).toUpperCase() + key.slice(1),
+          marksObtained: subData.score,
+          maxMarks: subData.totalMarks || 100,
+          correct: subData.correct || 0,
+          wrong: subData.wrong || 0,
+          attempted: (subData.correct || 0) + (subData.wrong || 0),
+          timeSecs: subData.time || 0,
+        });
+      }
+    });
+
+    // Add current subject just completed (stats from state, not context yet)
+    const currentKey = getSubjectKey(subjectId);
+    const alreadyAdded = list.some(s => s.subjectName.toLowerCase() === currentKey);
+    if (!alreadyAdded && stats) {
+      list.push({
+        subjectName: stats.subjectName,
+        marksObtained: stats.score,
+        maxMarks: stats.totalMarks,
+        correct: stats.correctCount,
+        wrong: stats.wrongCount,
+        attempted: stats.correctCount + stats.wrongCount,
+        timeSecs: stats.time,
+      });
+    }
+
+    return list;
+  };
+
+  // Save completed subjects to DB and exit
+  const handleSaveAndExit = async (stats) => {
+    if (saveRef.current) { navigate('/history'); return; }
+    saveRef.current = true;
+    setSaveStatus('saving');
+
+    const subjectResults = buildSubjectResults(stats);
+    const totalSc = subjectResults.reduce((a, s) => a + s.marksObtained, 0);
+    const totalMax = subjectResults.reduce((a, s) => a + s.maxMarks, 0);
+    const totalC = subjectResults.reduce((a, s) => a + s.correct, 0);
+    const totalW = subjectResults.reduce((a, s) => a + s.wrong, 0);
+
+    const payload = {
+      sessionId: session.sessionId + '-partial-' + subjectId,
+      testName: 'JEE PRACTICE SET A (Partial)',
+      overallTimeSecs: session.overallTime || 0,
+      totalScore: totalSc,
+      totalMaxMarks: totalMax,
+      totalCorrect: totalC,
+      totalWrong: totalW,
+      totalAttempted: totalC + totalW,
+      subjectResults,
+    };
+
+    try {
+      await saveTestResult(payload);
+      setSaveStatus('saved');
+    } catch (e) {
+      console.error('Save failed:', e);
+      setSaveStatus('error');
+    }
+
+    finishSession();
+    navigate('/history');
+  };
+
+  // Continue to next subject
+  const handleContinueToNext = (stats) => {
+    const nextId = stats?.nextId;
     if (nextId) {
-      // Move to next subject (e.g. Physics -> Chemistry or Chemistry -> Mathematics)
       setSubject(nextId);
       navigate(`/practice/${nextId}`);
-      // Reset local QuestionPractice component state for new subject
       setCurrentQuestionNumber(1);
       setTotalScore(0);
       setCorrectCount(0);
@@ -220,50 +276,60 @@ const QuestionPractice = () => {
       setError(null);
       setCompleted(false);
       setSubjectCompletionStats(null);
+      saveRef.current = false;
     } else {
-      // All subjects finished -> Finish session and go to final results
+      // Mathematics done — go to final results (FinalResult saves all)
       finishSession();
       navigate('/results');
     }
   };
 
+  // ── Render ────────────────────────────────────────────────────────────────
+
   return (
     <div className="app-container">
-      {/* Header / Navbar */}
+      {/* Navbar */}
       <header className="navbar">
         <div className="brand" onClick={() => navigate('/')}>
           <div className="brand-logo">A</div>
           <div className="brand-name">aorta<span>.prep</span></div>
         </div>
 
-        {/* OVERALL PRACTICE TIMER IN HEADER */}
         <div className="timer-badge header-timer">
           <Clock size={16} />
           <span>Overall: {formatTime(session.overallTime)}</span>
         </div>
 
-        <button className="btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }} onClick={() => navigate('/')}>
+        <button
+          className="btn-secondary"
+          style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
+          onClick={() => navigate('/')}
+        >
           Dashboard
         </button>
       </header>
 
       <main className="practice-page">
-        {/* INTERMEDIATE SUBJECT COMPLETION SCREEN */}
+        {/* ── SUBJECT COMPLETION SCREEN ─────────────────────────────────── */}
         {completed && subjectCompletionStats ? (
           <div className="completion-card">
             <div className="completion-icon">
               <Trophy size={48} />
             </div>
 
-            <h1 className="completion-title">{subjectCompletionStats.subjectName} Completed!</h1>
-            <p className="completion-subtitle">
-              Subject Practice Finished Successfully
-            </p>
+            <h1 className="completion-title">
+              {subjectCompletionStats.subjectName} Completed!
+            </h1>
+            <p className="completion-subtitle">Great work — here's your performance summary</p>
 
-            <div className="score-display-box" style={{ maxWidth: '440px' }}>
+            {/* Score box */}
+            <div className="score-display-box" style={{ maxWidth: '480px' }}>
               <div className="score-label">{subjectCompletionStats.subjectName} Score</div>
               <div className="total-score-value">
-                {subjectCompletionStats.score} <span style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>/ {subjectCompletionStats.totalMarks}</span>
+                {subjectCompletionStats.score}{' '}
+                <span style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>
+                  / {subjectCompletionStats.totalMarks}
+                </span>
               </div>
 
               <div className="stats-grid">
@@ -273,39 +339,98 @@ const QuestionPractice = () => {
                     {formatDetailedTime(subjectCompletionStats.time)}
                   </div>
                 </div>
-                <div className="stat-box correct">
-                  <div className="score-label">Accuracy</div>
+                <div className="stat-box">
+                  <div className="score-label">Correct</div>
                   <div className="stat-number" style={{ color: 'var(--success)' }}>
                     {subjectCompletionStats.correctCount} / 25
+                  </div>
+                </div>
+                <div className="stat-box">
+                  <div className="score-label">Wrong</div>
+                  <div className="stat-number" style={{ color: 'var(--error)' }}>
+                    {subjectCompletionStats.wrongCount} / 25
+                  </div>
+                </div>
+                <div className="stat-box">
+                  <div className="score-label">Accuracy</div>
+                  <div className="stat-number" style={{ color: '#f59e0b' }}>
+                    {subjectCompletionStats.correctCount + subjectCompletionStats.wrongCount > 0
+                      ? Math.round(
+                          (subjectCompletionStats.correctCount /
+                            (subjectCompletionStats.correctCount + subjectCompletionStats.wrongCount)) *
+                            100
+                        )
+                      : 0}
+                    %
                   </div>
                 </div>
               </div>
             </div>
 
-            <button className="btn-primary" onClick={handleProceedFromCompletion} style={{ padding: '1rem 2.5rem' }}>
-              {subjectCompletionStats.nextId ? (
-                <>
-                  Proceed to {getSubjectName(subjectCompletionStats.nextId)} <ArrowRight size={20} />
-                </>
-              ) : (
-                <>
-                  View Final Overall Results <ArrowRight size={20} />
-                </>
-              )}
-            </button>
+            {/* Choice buttons */}
+            <div className="subject-choice-section">
+              <p className="subject-choice-label">What would you like to do next?</p>
+
+              <div className="subject-choice-buttons">
+                {/* Save and Exit */}
+                <button
+                  className="subject-choice-btn exit-btn"
+                  onClick={() => handleSaveAndExit(subjectCompletionStats)}
+                  disabled={saveStatus === 'saving'}
+                >
+                  <div className="choice-btn-icon">
+                    <History size={24} />
+                  </div>
+                  <div className="choice-btn-content">
+                    <div className="choice-btn-title">
+                      {saveStatus === 'saving' ? 'Saving...' : 'Save & Exit'}
+                    </div>
+                    <div className="choice-btn-sub">
+                      Save {subjectCompletionStats.subjectName} score to history and exit
+                    </div>
+                  </div>
+                </button>
+
+                {/* Continue to next subject or final */}
+                <button
+                  className="subject-choice-btn continue-btn"
+                  onClick={() => handleContinueToNext(subjectCompletionStats)}
+                >
+                  <div className="choice-btn-icon">
+                    {subjectCompletionStats.nextId ? <ArrowRight size={24} /> : <Trophy size={24} />}
+                  </div>
+                  <div className="choice-btn-content">
+                    <div className="choice-btn-title">
+                      {subjectCompletionStats.nextId
+                        ? `Continue to ${getSubjectName(subjectCompletionStats.nextId)}`
+                        : 'View Final Results'}
+                    </div>
+                    <div className="choice-btn-sub">
+                      {subjectCompletionStats.nextId
+                        ? `Start ${getSubjectName(subjectCompletionStats.nextId)} practice`
+                        : 'See your complete JEE score'}
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
           </div>
         ) : (
           <>
-            {/* PROGRESS & STATS TOP BAR */}
+            {/* ── PROGRESS & STATS BAR ─────────────────────────────────── */}
             <div className="progress-card">
               <div className="progress-header">
                 <div className="question-counter">
                   <span>Question {currentQuestionNumber}</span>
                   <span style={{ color: 'var(--text-muted)' }}>/ 25</span>
                   <span className="subject-tag">{getSubjectName(subjectId)}</span>
+                  {isNumerical && (
+                    <span className="numerical-tag">
+                      <Pencil size={12} /> Fill in the Blank
+                    </span>
+                  )}
                 </div>
 
-                {/* SUBJECT TIMER & STATS */}
                 <div className="score-stats">
                   <div className="timer-badge subject-timer">
                     <Clock size={16} />
@@ -323,22 +448,22 @@ const QuestionPractice = () => {
                 </div>
               </div>
               <div className="progress-bar-track">
-                <div 
+                <div
                   className="progress-bar-fill"
                   style={{ width: `${(currentQuestionNumber / 25) * 100}%` }}
-                ></div>
+                />
               </div>
             </div>
 
-            {/* LOADING QUESTION STATE */}
+            {/* ── LOADING ──────────────────────────────────────────────── */}
             {loading && (
               <div className="state-container">
-                <div className="spinner"></div>
+                <div className="spinner" />
                 <p style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Loading question...</p>
               </div>
             )}
 
-            {/* FETCH ERROR STATE */}
+            {/* ── FETCH ERROR ──────────────────────────────────────────── */}
             {!loading && error && !checkingAnswer && !answerSubmitted && (
               <div className="state-container">
                 <XCircle size={48} className="error-text" />
@@ -349,7 +474,7 @@ const QuestionPractice = () => {
               </div>
             )}
 
-            {/* QUESTION DISPLAY */}
+            {/* ── QUESTION CARD ────────────────────────────────────────── */}
             {!loading && question && (!error || answerSubmitted) && (
               <div className="question-card">
                 <div className="question-meta">
@@ -361,46 +486,59 @@ const QuestionPractice = () => {
 
                 <h2 className="question-text">{question.questionText}</h2>
 
-                {/* QUESTION INPUT UI (MCQ OR NUMERICAL) */}
+                {/* ── NUMERICAL INPUT (Q21–Q25) ─────────────────────── */}
                 {isNumerical ? (
-                  /* NUMERICAL INPUT UI (Questions 21 to 25) */
-                  <div className="numerical-input-container">
-                    <label className="numerical-label" htmlFor="numericalAnswerInput">
-                      Enter numerical answer:
-                    </label>
-                    <input
-                      id="numericalAnswerInput"
-                      type="number"
-                      step="any"
-                      placeholder="Type your answer here..."
-                      value={numericalAnswer}
-                      onChange={handleNumericalChange}
-                      disabled={answerSubmitted || checkingAnswer}
-                      className={`numerical-input ${
-                        answerSubmitted && answerResult
-                          ? answerResult.correct
-                            ? 'correct-result'
-                            : 'wrong-result'
-                          : ''
-                      }`}
-                    />
+                  <div className="fitb-container">
+                    <div className="fitb-header">
+                      <Pencil size={16} />
+                      <span>Fill in the Blank</span>
+                      <span className="fitb-hint">Enter a numerical value</span>
+                    </div>
+
+                    <div className="fitb-input-row">
+                      <span className="fitb-answer-label">Answer =</span>
+                      <input
+                        id="numericalAnswerInput"
+                        type="number"
+                        step="any"
+                        placeholder="0"
+                        value={numericalAnswer}
+                        onChange={handleNumericalChange}
+                        disabled={answerSubmitted || checkingAnswer}
+                        autoFocus
+                        className={`fitb-input ${
+                          answerSubmitted && answerResult
+                            ? answerResult.correct
+                              ? 'correct-result'
+                              : 'wrong-result'
+                            : ''
+                        }`}
+                      />
+                      {answerSubmitted && answerResult && (
+                        <span className={`fitb-result-icon ${answerResult.correct ? 'correct' : 'wrong'}`}>
+                          {answerResult.correct ? <CheckCircle2 size={24} /> : <XCircle size={24} />}
+                        </span>
+                      )}
+                    </div>
+
+                    {!answerSubmitted && (
+                      <p className="fitb-tip">
+                        💡 Tip: Enter only the numerical value (e.g. 42, 3.14, -5)
+                      </p>
+                    )}
                   </div>
                 ) : (
-                  /* MCQ OPTIONS LIST UI (Questions 1 to 20) */
+                  /* ── MCQ OPTIONS ─────────────────────────────────── */
                   <div className="options-list">
                     {question.options && question.options.map((opt) => {
                       const isSelected = selectedAnswer === opt.optionLabel;
                       let resultClass = '';
-                      
                       if (answerSubmitted && answerResult) {
                         if (answerResult.correct && isSelected) {
                           resultClass = 'correct-result';
                         } else if (!answerResult.correct) {
-                          if (isSelected) {
-                            resultClass = 'wrong-result';
-                          } else if (answerResult.correctAnswer === opt.optionLabel) {
-                            resultClass = 'correct-result';
-                          }
+                          if (isSelected) resultClass = 'wrong-result';
+                          else if (answerResult.correctAnswer === opt.optionLabel) resultClass = 'correct-result';
                         }
                       }
 
@@ -413,7 +551,7 @@ const QuestionPractice = () => {
                           onClick={() => handleSelectOption(opt.optionLabel)}
                         >
                           <div className="radio-indicator">
-                            {isSelected && <div className="radio-inner"></div>}
+                            {isSelected && <div className="radio-inner" />}
                           </div>
                           <span className="option-label">{opt.optionLabel}.</span>
                           <span className="option-text">{opt.optionText}</span>
@@ -423,27 +561,21 @@ const QuestionPractice = () => {
                   </div>
                 )}
 
-                {/* ANSWER CHECK RESULT DISPLAY */}
+                {/* ── RESULT BANNER ─────────────────────────────────── */}
                 {answerSubmitted && answerResult && (
                   <div className={`result-banner ${answerResult.correct ? 'success' : 'wrong'}`}>
                     <div className="result-header">
-                      {answerResult.correct ? (
-                        <>
-                          <CheckCircle2 size={24} /> Correct Answer
-                        </>
-                      ) : (
-                        <>
-                          <XCircle size={24} /> Wrong Answer
-                        </>
-                      )}
+                      {answerResult.correct
+                        ? <><CheckCircle2 size={24} /> Correct Answer!</>
+                        : <><XCircle size={24} /> Wrong Answer</>}
                     </div>
 
                     {answerResult.correct ? (
-                      <div className="score-gain">+{answerResult.score || 4} Marks</div>
+                      <div className="score-gain">+{answerResult.score || 4} Marks earned</div>
                     ) : (
                       <>
                         <div style={{ fontWeight: 700, marginTop: '0.25rem' }}>
-                          Correct Answer: {answerResult.correctAnswer}
+                          Correct Answer: <span style={{ color: 'var(--success)' }}>{answerResult.correctAnswer}</span>
                         </div>
                         {answerResult.explanation && (
                           <div className="explanation-card">
@@ -456,8 +588,8 @@ const QuestionPractice = () => {
                   </div>
                 )}
 
-                {/* ANSWER CHECK ERROR STATE */}
-                {error && checkingAnswer === false && answerSubmitted === false && (
+                {/* ── ANSWER ERROR ─────────────────────────────────── */}
+                {error && !checkingAnswer && !answerSubmitted && (
                   <div style={{ color: 'var(--error)', marginBottom: '1rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <XCircle size={18} />
                     <span>Unable to check answer.</span>
@@ -467,21 +599,16 @@ const QuestionPractice = () => {
                   </div>
                 )}
 
-                {/* ACTIONS AREA */}
+                {/* ── ACTION BAR ───────────────────────────────────── */}
                 <div className="action-bar">
                   {!answerSubmitted ? (
                     <button
                       className="btn-primary"
-                      disabled={
-                        (isNumerical ? !numericalAnswer.trim() : !selectedAnswer) || checkingAnswer
-                      }
+                      disabled={(isNumerical ? !numericalAnswer.trim() : !selectedAnswer) || checkingAnswer}
                       onClick={handleCheckAnswer}
                     >
                       {checkingAnswer ? (
-                        <>
-                          <div className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }}></div>
-                          Checking answer...
-                        </>
+                        <><div className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> Checking...</>
                       ) : isNumerical ? (
                         'Submit Answer'
                       ) : (

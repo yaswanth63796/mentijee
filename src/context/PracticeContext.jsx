@@ -2,35 +2,55 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const PracticeContext = createContext();
 
+/** Generate a simple UUID v4 */
+const generateSessionId = () => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
+
+const defaultSubjectStats = () => ({
+  score: 0,
+  totalMarks: 100,
+  time: 0,
+  correct: 0,
+  wrong: 0,
+  completed: false,
+});
+
 export const PracticeProvider = ({ children }) => {
   const [session, setSession] = useState({
     isActive: false,
-    overallTime: 0, // overall practice time in seconds
+    sessionId: null,
+    overallTime: 0,
     currentSubjectId: null,
-    subjectTime: 0, // current subject time in seconds
+    subjectTime: 0,
     results: {
-      physics: { score: 0, totalMarks: 100, time: 0, completed: false },
-      chemistry: { score: 0, totalMarks: 100, time: 0, completed: false },
-      mathematics: { score: 0, totalMarks: 100, time: 0, completed: false },
+      physics: defaultSubjectStats(),
+      chemistry: defaultSubjectStats(),
+      mathematics: defaultSubjectStats(),
     },
   });
 
-  // Start brand new JEE Practice Set A session
+  /** Start a brand-new practice session */
   const startSession = () => {
     setSession({
       isActive: true,
+      sessionId: generateSessionId(),
       overallTime: 0,
       currentSubjectId: null,
       subjectTime: 0,
       results: {
-        physics: { score: 0, totalMarks: 100, time: 0, completed: false },
-        chemistry: { score: 0, totalMarks: 100, time: 0, completed: false },
-        mathematics: { score: 0, totalMarks: 100, time: 0, completed: false },
+        physics: defaultSubjectStats(),
+        chemistry: defaultSubjectStats(),
+        mathematics: defaultSubjectStats(),
       },
     });
   };
 
-  // Start or switch to a subject timer
+  /** Switch to a new subject — resets the subject timer */
   const setSubject = (subjectId) => {
     setSession((prev) => ({
       ...prev,
@@ -40,10 +60,13 @@ export const PracticeProvider = ({ children }) => {
     }));
   };
 
-  // Save subject completion stats and reset subject timer
-  const completeSubject = (subjectKey, score, totalMarks) => {
+  /**
+   * Called when a student finishes all questions in a subject.
+   * Captures the current subjectTime before resetting it.
+   */
+  const completeSubject = (subjectKey, score, totalMarks, correct = 0, wrong = 0) => {
     setSession((prev) => {
-      const subjectTimeTaken = prev.subjectTime;
+      const timeTaken = prev.subjectTime;
       return {
         ...prev,
         subjectTime: 0,
@@ -52,7 +75,9 @@ export const PracticeProvider = ({ children }) => {
           [subjectKey]: {
             score,
             totalMarks,
-            time: subjectTimeTaken,
+            time: timeTaken,
+            correct,
+            wrong,
             completed: true,
           },
         },
@@ -60,7 +85,7 @@ export const PracticeProvider = ({ children }) => {
     });
   };
 
-  // Complete overall session
+  /** Mark entire session as finished */
   const finishSession = () => {
     setSession((prev) => ({
       ...prev,
@@ -68,7 +93,7 @@ export const PracticeProvider = ({ children }) => {
     }));
   };
 
-  // Timer interval effect
+  /** Tick every second while session is active */
   useEffect(() => {
     let interval = null;
     if (session.isActive) {
@@ -76,7 +101,9 @@ export const PracticeProvider = ({ children }) => {
         setSession((prev) => ({
           ...prev,
           overallTime: prev.overallTime + 1,
-          subjectTime: prev.currentSubjectId ? prev.subjectTime + 1 : prev.subjectTime,
+          subjectTime: prev.currentSubjectId
+            ? prev.subjectTime + 1
+            : prev.subjectTime,
         }));
       }, 1000);
     }
@@ -87,13 +114,7 @@ export const PracticeProvider = ({ children }) => {
 
   return (
     <PracticeContext.Provider
-      value={{
-        session,
-        startSession,
-        setSubject,
-        completeSubject,
-        finishSession,
-      }}
+      value={{ session, startSession, setSubject, completeSubject, finishSession }}
     >
       {children}
     </PracticeContext.Provider>
