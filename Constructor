@@ -1,0 +1,41 @@
+[33mcommit b224a77356f20db2a6ff6e8666efcde15a64a8bb[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mbackend[m[33m, [m[1;31morigin/backend[m[33m)[m
+Author: yaswanth63796 <yeshuv24@gmail.com>
+Date:   Sun Aug 16 05:04:07 2026 +0530
+
+    created the dto folder and next is added code in two classes
+
+[33mcommit 48a75ae8bac383435820279a13784369640e5a54[m
+Author: yaswanth63796 <yeshuv24@gmail.com>
+Date:   Sun Aug 16 04:47:00 2026 +0530
+
+    done chnages in schema questions and hardcoded in db of 75 questions
+
+[33mcommit cc436841a45222d2022f9ac53c0e4a65a5c5b34f[m
+Author: yaswanth63796 <yeshuv24@gmail.com>
+Date:   Sun Aug 16 03:38:00 2026 +0530
+
+    created the files in repository folder
+
+[33mcommit 071ce774991600c500ecaa303e9da236f20d61ff[m
+Author: yaswanth63796 <yeshuv24@gmail.com>
+Date:   Sun Aug 16 03:22:28 2026 +0530
+
+    added the code and created the entity and instructed schemas in variables
+
+[33mcommit e3abaa95bcb0d0ceb4e48e08628d2f7461ff7606[m
+Author: yaswanth63796 <yeshuv24@gmail.com>
+Date:   Sun Aug 16 02:54:48 2026 +0530
+
+    created the files of Entity folder
+
+[33mcommit 226b24796be9808fba80ecc8aa8b980fef209fdd[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m
+Author: yaswanth63796 <yeshuv24@gmail.com>
+Date:   Sun Aug 16 02:44:36 2026 +0530
+
+    added the database configuration
+
+[33mcommit 8d4f888b4e98d0339d358eb68161ca3f6168f49c[m
+Author: YASWANTH <yeshuv24@gmail.com>
+Date:   Sat Aug 15 21:11:34 2026 +0530
+
+    Initial commit

@@ -1,6 +1,7 @@
 package com.example.Backend.Entity;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -40,9 +41,10 @@ public class Question {
 
     @ManyToOne
     @JoinColumn(name = "subject_id", nullable = false)
+    @JsonIgnore
     private Subject subject;
 
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL)
-    @JsonManagedReference
+    @JsonIgnoreProperties("question")
     private List<Option> options;
 }

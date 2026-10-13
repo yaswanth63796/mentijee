@@ -1,41 +1,50 @@
 package com.example.Backend.Config;
 
+import com.example.Backend.Service.MyUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cglib.proxy.NoOp;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
+@Configuration
+@EnableWebSecurity
 public class SecurityConfig {
 
-
     @Autowired
-    UserDetailsService service;
+    private MyUserDetailsService userDetailsService;
 
-public SecurityFilterChain securityFilterChain(HttpSecurity http){
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
-    http.csrf(Customizer->Customizer.disable());
-    http.authorizeHttpRequests(Request->Request.anyRequest().authenticated()); //authorize any http requests
-    http.formLogin(Customizer.withDefaults());  //gives login to browser
-    http.httpBasic(Customizer.withDefaults());  //gives suthentication to postman
-    // http.sessionManagement(Session->Session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));  //each time it creates session Id
-    return http.build();
-}
+        http.cors(Customizer.withDefaults());
+        http.csrf(Customizer -> Customizer.disable());
+        http.authorizeHttpRequests(Request -> Request
+                .requestMatchers(
+                        "/api/register",
+                        "/api/login",
+                        "/api/questions/**",
+                        "/api/subjects/**",
+                        "/api/test-results/**"
+                ).permitAll()
+                .anyRequest().authenticated()
+        );
+        http.formLogin(Customizer.withDefaults());
+        http.httpBasic(Customizer.withDefaults());
 
-    public AuthenticationProvider authenticationProvider(){
+        return http.build();
+    }
 
-
-        DaoAuthenticationProvider provider=new DaoAuthenticationProvider(service);
+    @Bean
+    public AuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
         provider.setPasswordEncoder(new BCryptPasswordEncoder(12));
-
-
         return provider;
-
     }
 }

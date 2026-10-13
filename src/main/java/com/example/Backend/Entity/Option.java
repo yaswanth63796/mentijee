@@ -1,6 +1,6 @@
 package com.example.Backend.Entity;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -24,6 +24,6 @@ public class Option {
 
     @ManyToOne
     @JoinColumn(name = "question_id", nullable = false)
-    @JsonBackReference
+    @JsonIgnore
     private Question question;
 }
