@@ -17,9 +17,24 @@ public class UserPrincipal implements UserDetails {
         this.user=user;
     }
 
+    public User getUser() {
+        return user;
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.singleton(new SimpleGrantedAuthority("USER"));
+        String role = user.getRole();
+        if (role == null || role.isBlank()) {
+            role = "USER";
+        }
+        role = role.trim().toUpperCase();
+        if (role.equals("ADMIN") || role.equals("ROLE_ADMIN")) {
+            return java.util.List.of(
+                new SimpleGrantedAuthority("ROLE_ADMIN"),
+                new SimpleGrantedAuthority("ROLE_USER")
+            );
+        }
+        return Collections.singleton(new SimpleGrantedAuthority("ROLE_USER"));
     }
 
     @Override
@@ -29,6 +44,6 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public String getUsername() {
-        return  user.getEmail();
+        return user.getEmail();
     }
 }
