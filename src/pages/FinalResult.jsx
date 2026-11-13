@@ -4,6 +4,7 @@ import { Trophy, Clock, Award, ArrowRight, RotateCcw, CheckCircle2, History, Bar
 import { usePractice } from '../context/PracticeContext';
 import { saveTestResult } from '../api/testResultApi';
 import confetti from 'canvas-confetti';
+import Navbar from '../components/Navbar';
 
 const FinalResult = () => {
   const navigate = useNavigate();
@@ -97,29 +98,8 @@ const FinalResult = () => {
   };
 
   return (
-    <div className="app-container">
-      <header className="navbar">
-        <div className="brand" onClick={() => navigate('/')}>
-          <div className="brand-logo">A</div>
-          <div className="brand-name">aorta<span>.prep</span></div>
-        </div>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button
-            className="btn-secondary"
-            style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-            onClick={() => navigate('/history')}
-          >
-            <History size={16} /> Test History
-          </button>
-          <button
-            className="btn-secondary"
-            style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-            onClick={() => navigate('/performance')}
-          >
-            <BarChart2 size={16} /> Performance
-          </button>
-        </div>
-      </header>
+    <div className="menti-page-wrapper">
+      <Navbar />
 
       <main className="practice-page">
         <div className="completion-card">

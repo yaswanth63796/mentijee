@@ -290,9 +290,16 @@ const QuestionPractice = () => {
     <div className="app-container">
       {/* Navbar */}
       <header className="navbar">
-        <div className="brand" onClick={() => navigate('/')}>
-          <div className="brand-logo">A</div>
-          <div className="brand-name">aorta<span>.prep</span></div>
+        <div className="menti-brand" onClick={() => navigate('/')}>
+          <div className="menti-logo-badge">
+            <span className="menti-logo-text">M</span>
+          </div>
+          <div className="menti-brand-details">
+            <div className="menti-brand-name">
+              Menti<span>JEE</span>
+            </div>
+            <span className="menti-brand-tag">EXCELLENCE PLATFORM</span>
+          </div>
         </div>
 
         <div className="timer-badge header-timer">

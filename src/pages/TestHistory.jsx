@@ -4,6 +4,7 @@ import {
   History, ChevronRight, Clock, Trophy, CheckCircle2, XCircle,
   BarChart2, ArrowLeft, AlertCircle, Search, RefreshCw
 } from 'lucide-react';
+import Navbar from '../components/Navbar';
 import { getTestHistory } from '../api/testResultApi';
 
 const ITEMS_PER_PAGE = 8;
@@ -74,30 +75,8 @@ const TestHistory = () => {
   const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
   return (
-    <div className="app-container">
-      {/* Navbar */}
-      <header className="navbar">
-        <div className="brand" onClick={() => navigate('/')}>
-          <div className="brand-logo">A</div>
-          <div className="brand-name">aorta<span>.prep</span></div>
-        </div>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button
-            className="btn-secondary"
-            style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-            onClick={() => navigate('/performance')}
-          >
-            <BarChart2 size={16} /> Performance
-          </button>
-          <button
-            className="btn-secondary"
-            style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-            onClick={() => navigate('/')}
-          >
-            <ArrowLeft size={16} /> Home
-          </button>
-        </div>
-      </header>
+    <div className="menti-page-wrapper">
+      <Navbar />
 
       <main className="history-page">
         {/* Page header */}

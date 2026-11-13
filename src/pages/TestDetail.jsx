@@ -4,6 +4,7 @@ import {
   ArrowLeft, Clock, Trophy, CheckCircle2, XCircle,
   Target, BarChart2, History, AlertCircle, RefreshCw
 } from 'lucide-react';
+import Navbar from '../components/Navbar';
 import { getTestDetail } from '../api/testResultApi';
 
 const TestDetail = () => {
@@ -60,29 +61,8 @@ const TestDetail = () => {
   };
 
   return (
-    <div className="app-container">
-      <header className="navbar">
-        <div className="brand" onClick={() => navigate('/')}>
-          <div className="brand-logo">A</div>
-          <div className="brand-name">aorta<span>.prep</span></div>
-        </div>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button
-            className="btn-secondary"
-            style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-            onClick={() => navigate('/history')}
-          >
-            <History size={16} /> History
-          </button>
-          <button
-            className="btn-secondary"
-            style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-            onClick={() => navigate('/performance')}
-          >
-            <BarChart2 size={16} /> Performance
-          </button>
-        </div>
-      </header>
+    <div className="menti-page-wrapper">
+      <Navbar />
 
       <main className="history-page">
         <div style={{ marginBottom: '1.5rem' }}>

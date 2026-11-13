@@ -8,6 +8,7 @@ import {
   BarChart2, ArrowLeft, History, Trophy, Clock,
   Target, TrendingUp, Zap, RefreshCw, AlertCircle
 } from 'lucide-react';
+import Navbar from '../components/Navbar';
 import { getAnalytics } from '../api/testResultApi';
 
 /* ─── Custom tooltip wrapper ─────────────────────────────────── */
@@ -78,30 +79,8 @@ const PerformanceDashboard = () => {
   const noData = !analytics || analytics.totalTests === 0;
 
   return (
-    <div className="app-container">
-      {/* Navbar */}
-      <header className="navbar">
-        <div className="brand" onClick={() => navigate('/')}>
-          <div className="brand-logo">A</div>
-          <div className="brand-name">aorta<span>.prep</span></div>
-        </div>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button
-            className="btn-secondary"
-            style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-            onClick={() => navigate('/history')}
-          >
-            <History size={16} /> History
-          </button>
-          <button
-            className="btn-secondary"
-            style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-            onClick={() => navigate('/')}
-          >
-            <ArrowLeft size={16} /> Home
-          </button>
-        </div>
-      </header>
+    <div className="menti-page-wrapper">
+      <Navbar />
 
       <main className="history-page">
         {/* Page header */}

@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Atom, Flame, Calculator, ChevronRight, ArrowLeft, CheckCircle } from 'lucide-react';
 import { usePractice } from '../context/PracticeContext';
+import Navbar from '../components/Navbar';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -37,32 +38,24 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="app-container">
-      <header className="navbar">
-        <div className="brand" onClick={() => navigate('/')}>
-          <div className="brand-logo">A</div>
-          <div className="brand-name">aorta<span>.prep</span></div>
-        </div>
-        <button className="btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }} onClick={() => navigate('/')}>
-          <ArrowLeft size={16} /> Back to Sets
-        </button>
-      </header>
+    <div className="menti-page-wrapper">
+      <Navbar />
 
-      <main className="dashboard-page">
-        <div style={{ marginBottom: '1.5rem' }}>
+      <main className="menti-content-container">
+        <div className="menti-back-bar">
           <button 
-            className="back-link-btn"
+            className="menti-back-btn"
             onClick={() => navigate('/')}
           >
-            <ArrowLeft size={16} /> Back
+            <ArrowLeft size={16} /> Back to Dashboard
           </button>
         </div>
 
-        <section className="hero-section">
-          <h1 className="hero-title">
+        <section className="menti-page-header" style={{ textAlign: 'center', maxWidth: '800px', margin: '1rem auto 2.5rem' }}>
+          <h1 className="menti-header-title">
             Master JEE with <span>AI-Powered</span> Question Practice
           </h1>
-          <p className="hero-subtitle">
+          <p className="menti-header-desc" style={{ margin: '0 auto' }}>
             Select a subject to begin your practice session with real-time evaluation and step-by-step solutions.
           </p>
         </section>

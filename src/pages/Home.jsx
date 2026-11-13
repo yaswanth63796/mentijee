@@ -1,7 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Layers, ArrowRight, Sparkles, CheckCircle2, History, BarChart2 } from 'lucide-react';
+import { Layers, ArrowRight, Sparkles, CheckCircle2, History, BarChart2, Trophy, ShieldCheck, Zap } from 'lucide-react';
 import { usePractice } from '../context/PracticeContext';
+import Navbar from '../components/Navbar';
 
 const Home = () => {
   const navigate = useNavigate();
@@ -13,94 +14,106 @@ const Home = () => {
   };
 
   return (
-    <div className="app-container">
-      {/* Header / Navbar */}
-      <header className="navbar">
-        <div className="brand" onClick={() => navigate('/')}>
-          <div className="brand-logo">A</div>
-          <div className="brand-name">aorta<span>.prep</span></div>
-        </div>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button
-            className="btn-secondary"
-            style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-            onClick={() => navigate('/history')}
-          >
-            <History size={16} /> Test History
-          </button>
-          <button
-            className="btn-secondary"
-            style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-            onClick={() => navigate('/performance')}
-          >
-            <BarChart2 size={16} /> Performance
-          </button>
-        </div>
-      </header>
+    <div className="menti-page-wrapper">
+      <Navbar />
 
-      <main className="dashboard-page">
-        <section className="hero-section">
-          <h1 className="hero-title">
-            JEE <span>Practice Platform</span>
+      <main className="menti-content-container">
+        <section className="menti-page-header" style={{ textAlign: 'center', maxWidth: '800px', margin: '2rem auto 2.5rem' }}>
+          <div className="menti-header-badge" style={{ margin: '0 auto 1rem' }}>
+            <Sparkles size={15} />
+            <span>EXCELLENCE IN JEE PREPARATION</span>
+          </div>
+          <h1 className="menti-header-title" style={{ fontSize: '2.5rem' }}>
+            Master JEE with <span>MentiJEE</span>
           </h1>
-          <p className="hero-subtitle">
-            Prepare for JEE Main &amp; Advanced with curated question sets, instant grading, and step-by-step solutions.
+          <p className="menti-header-desc" style={{ fontSize: '1.05rem', margin: '0 auto' }}>
+            Prepare for JEE Main &amp; Advanced with curated multi-subject practice modules, national timed mock challenges, and instant performance analysis.
           </p>
         </section>
 
-        {/* JEE PRACTICE SET A CARD */}
-        <div className="practice-set-wrapper">
-          <div className="practice-set-card">
-            <div className="set-badge">
-              <Sparkles size={16} /> RECOMMENDED PRACTICE
+        {/* Action Hero Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', maxWidth: '1000px', margin: '0 auto 3rem' }}>
+          {/* JEE CONTESTS CARD */}
+          <div className="menti-contest-card border-live" style={{ padding: '2rem' }}>
+            <div className="menti-card-top">
+              <span className="menti-badge badge-live">
+                <span className="live-pulse" /> LIVE CHALLENGES
+              </span>
+              <span className="menti-spec-tag">
+                <Trophy size={14} /> All-India Ranks
+              </span>
             </div>
 
-            <div className="set-header">
-              <div className="set-icon-box">
-                <Layers size={32} />
+            <h2 className="menti-card-title" style={{ fontSize: '1.4rem' }}>
+              All-India JEE Contests
+            </h2>
+            <p className="menti-card-desc">
+              Compete live with national aspirants in timed 15-question examinations (5 Physics, 5 Chemistry, 5 Mathematics) with real-time WebSocket leaderboards.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', margin: '1.25rem 0', fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <CheckCircle2 size={16} color="var(--color-success)" />
+                <span>Deterministic ranking with negative marking</span>
               </div>
-              <div>
-                <h2 className="set-title">JEE PRACTICE SET A</h2>
-                <p className="set-description">
-                  Practice JEE-level Physics, Chemistry and Mathematics questions with instant evaluation.
-                </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <CheckCircle2 size={16} color="var(--color-success)" />
+                <span>Instant score calculation upon time expiry</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <CheckCircle2 size={16} color="var(--color-success)" />
+                <span>Comprehensive solutions and derivations</span>
               </div>
             </div>
 
-            <div className="set-features">
-              <div className="feature-item"><CheckCircle2 size={16} /> Physics</div>
-              <div className="feature-item"><CheckCircle2 size={16} /> Chemistry</div>
-              <div className="feature-item"><CheckCircle2 size={16} /> Mathematics</div>
-            </div>
-
-            <div className="set-footer">
-              <button
-                className="btn-primary"
-                style={{ width: '100%', justifyContent: 'center', padding: '1rem' }}
-                onClick={handleStartPractice}
-              >
-                Start Practice <ArrowRight size={20} />
-              </button>
-            </div>
+            <button
+              className="menti-btn menti-btn-primary ws-full-btn"
+              onClick={() => navigate('/contests')}
+              style={{ marginTop: 'auto' }}
+            >
+              Explore JEE Contests <ArrowRight size={16} />
+            </button>
           </div>
 
-          {/* Quick links */}
-          <div className="home-quick-links">
-            <button className="quick-link-card" onClick={() => navigate('/history')}>
-              <History size={24} />
-              <div>
-                <div className="quick-link-title">Test History</div>
-                <div className="quick-link-sub">View all past attempts</div>
+          {/* JEE PRACTICE SET A CARD */}
+          <div className="menti-contest-card" style={{ padding: '2rem' }}>
+            <div className="menti-card-top">
+              <span className="menti-badge badge-upcoming">
+                <Sparkles size={14} /> CURATED SET
+              </span>
+              <span className="menti-spec-tag">
+                <Zap size={14} /> Self-Paced Practice
+              </span>
+            </div>
+
+            <h2 className="menti-card-title" style={{ fontSize: '1.4rem' }}>
+              JEE Practice Set A
+            </h2>
+            <p className="menti-card-desc">
+              Practice JEE-level Physics, Chemistry, and Mathematics questions with instant real-time evaluation, time tracking, and step-by-step solutions.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', margin: '1.25rem 0', fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <CheckCircle2 size={16} color="var(--color-success)" />
+                <span>MCQs (Q1–20) &amp; Numerical questions (Q21–25)</span>
               </div>
-              <ArrowRight size={18} style={{ marginLeft: 'auto', color: 'var(--text-muted)' }} />
-            </button>
-            <button className="quick-link-card" onClick={() => navigate('/performance')}>
-              <BarChart2 size={24} />
-              <div>
-                <div className="quick-link-title">Performance Dashboard</div>
-                <div className="quick-link-sub">Charts, trends, analytics</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <CheckCircle2 size={16} color="var(--color-success)" />
+                <span>Overall and individual subject time tracking</span>
               </div>
-              <ArrowRight size={18} style={{ marginLeft: 'auto', color: 'var(--text-muted)' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <CheckCircle2 size={16} color="var(--color-success)" />
+                <span>Automatic subject chaining &amp; result analytics</span>
+              </div>
+            </div>
+
+            <button
+              className="menti-btn menti-btn-secondary ws-full-btn"
+              onClick={handleStartPractice}
+              style={{ marginTop: 'auto' }}
+            >
+              Start Practice Set A <ArrowRight size={16} />
             </button>
           </div>
         </div>
